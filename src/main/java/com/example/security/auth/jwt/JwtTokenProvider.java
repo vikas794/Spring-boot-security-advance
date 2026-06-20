@@ -8,6 +8,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,8 @@ import java.util.stream.Collectors;
 @Component
 @ConditionalOnProperty(name = "security.modules.jwt.enabled", havingValue = "true")
 public class JwtTokenProvider {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
     private final SecretKey key;
     private final long tokenValidityInMilliseconds;
@@ -55,11 +59,16 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        Collection<? extends GrantedAuthority> authorities =
-                Arrays.stream(claims.get("auth").toString().split(","))
-                        .filter(auth -> !auth.trim().isEmpty())
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+        Collection<? extends GrantedAuthority> authorities;
+        Object authClaim = claims.get("auth");
+        if (authClaim == null) {
+            authorities = java.util.Collections.emptyList();
+        } else {
+            authorities = Arrays.stream(authClaim.toString().split(","))
+                    .filter(auth -> !auth.trim().isEmpty())
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toList());
+        }
 
         org.springframework.security.core.userdetails.User principal =
                 new org.springframework.security.core.userdetails.User(claims.getSubject(), "", authorities);
@@ -72,8 +81,47 @@ public class JwtTokenProvider {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(authToken);
             return true;
         } catch (Exception e) {
-            // Logs for invalid tokens (e.g., expired, malformed) should go here
+            logger.warn("Invalid JWT token: {}", e.getMessage());
             return false;
+        }
+    }
+
+    public Authentication validateAndGetAuthentication(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            Collection<? extends GrantedAuthority> authorities =
+                    Arrays.stream(claims.get("auth").toString().split(","))
+                            .filter(auth -> !auth.trim().isEmpty())
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
+
+            org.springframework.security.core.userdetails.User principal =
+                    new org.springframework.security.core.userdetails.User(claims.getSubject(), "", authorities);
+
+            return new UsernamePasswordAuthenticationToken(principal, token, authorities);
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Expired JWT token", e);
+            return null;
+        } catch (io.jsonwebtoken.security.SignatureException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Invalid JWT signature", e);
+            return null;
+        } catch (io.jsonwebtoken.MalformedJwtException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Invalid JWT token", e);
+            return null;
+        } catch (io.jsonwebtoken.UnsupportedJwtException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Unsupported JWT token", e);
+            return null;
+        } catch (IllegalArgumentException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("JWT claims string is empty", e);
+            return null;
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Failed to parse JWT token", e);
+            return null;
         }
     }
 }
