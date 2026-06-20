@@ -85,4 +85,43 @@ public class JwtTokenProvider {
             return false;
         }
     }
+
+    public Authentication validateAndGetAuthentication(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            Collection<? extends GrantedAuthority> authorities =
+                    Arrays.stream(claims.get("auth").toString().split(","))
+                            .filter(auth -> !auth.trim().isEmpty())
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
+
+            org.springframework.security.core.userdetails.User principal =
+                    new org.springframework.security.core.userdetails.User(claims.getSubject(), "", authorities);
+
+            return new UsernamePasswordAuthenticationToken(principal, token, authorities);
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Expired JWT token", e);
+            return null;
+        } catch (io.jsonwebtoken.security.SignatureException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Invalid JWT signature", e);
+            return null;
+        } catch (io.jsonwebtoken.MalformedJwtException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Invalid JWT token", e);
+            return null;
+        } catch (io.jsonwebtoken.UnsupportedJwtException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Unsupported JWT token", e);
+            return null;
+        } catch (IllegalArgumentException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("JWT claims string is empty", e);
+            return null;
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).error("Failed to parse JWT token", e);
+            return null;
+        }
+    }
 }
