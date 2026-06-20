@@ -29,12 +29,8 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
     private boolean hasPrivilege(Authentication auth, String targetType, String permission) {
         // e.g., require authority "USER_READ"
-        String requiredAuthority = targetType + "_" + permission;
-        for (GrantedAuthority grantedAuth : auth.getAuthorities()) {
-            if (grantedAuth.getAuthority().equals(requiredAuthority) || grantedAuth.getAuthority().equals("ROLE_ADMIN")) {
-                return true;
-            }
-        }
-        return false;
+        String requiredAuthority = String.format("%s_%s", targetType, permission);
+        return auth.getAuthorities().stream()
+                .anyMatch(grantedAuth -> grantedAuth.getAuthority().equals(requiredAuthority) || grantedAuth.getAuthority().equals("ROLE_ADMIN"));
     }
 }
