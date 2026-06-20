@@ -33,11 +33,11 @@ public class JwtTokenProvider {
     }
 
     public String createToken(Authentication authentication) {
-        String authorities = authentication.getAuthorities().stream()
+        Collection<String> authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
+                .collect(Collectors.toList());
 
-        long now = (new Date()).getTime();
+        long now = System.currentTimeMillis();
         Date validity = new Date(now + this.tokenValidityInMilliseconds);
 
         return Jwts.builder()
@@ -55,9 +55,22 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
 
+        Object authClaim = claims.get("auth");
+        Collection<String> authClaims;
+
+        if (authClaim instanceof String) {
+            authClaims = Arrays.asList(((String) authClaim).split(","));
+        } else if (authClaim instanceof Collection) {
+            @SuppressWarnings("unchecked")
+            Collection<String> tempClaims = (Collection<String>) authClaim;
+            authClaims = tempClaims;
+        } else {
+            authClaims = java.util.Collections.emptyList();
+        }
+
         Collection<? extends GrantedAuthority> authorities =
-                Arrays.stream(claims.get("auth").toString().split(","))
-                        .filter(auth -> !auth.trim().isEmpty())
+                authClaims.stream()
+                        .filter(auth -> auth != null && !auth.trim().isEmpty())
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
