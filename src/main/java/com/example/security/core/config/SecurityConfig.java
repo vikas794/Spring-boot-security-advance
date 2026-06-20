@@ -28,7 +28,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable) // Defaulting to stateless API, CSRF disabled
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/h2-console/**").permitAll() // Allow H2 Console
+                .requestMatchers("/h2-console/**").hasAuthority("ROLE_ADMIN") // Restrict H2 Console to Admin
                 .requestMatchers("/debug/**").permitAll()      // Allow debug endpoints for learning
                 .requestMatchers("/auth/**").permitAll()       // Open auth endpoints
                 .anyRequest().authenticated()
