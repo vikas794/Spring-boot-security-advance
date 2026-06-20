@@ -55,11 +55,16 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        Collection<? extends GrantedAuthority> authorities =
-                Arrays.stream(claims.get("auth").toString().split(","))
-                        .filter(auth -> !auth.trim().isEmpty())
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+        Collection<? extends GrantedAuthority> authorities;
+        Object authClaim = claims.get("auth");
+        if (authClaim == null) {
+            authorities = java.util.Collections.emptyList();
+        } else {
+            authorities = Arrays.stream(authClaim.toString().split(","))
+                    .filter(auth -> !auth.trim().isEmpty())
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toList());
+        }
 
         org.springframework.security.core.userdetails.User principal =
                 new org.springframework.security.core.userdetails.User(claims.getSubject(), "", authorities);
