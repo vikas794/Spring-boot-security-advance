@@ -1,0 +1,52 @@
+<<<<<<< SEARCH
+<<<<<<< HEAD
+        Object authClaim = claims.get("auth");
+        Collection<String> authClaims;
+
+        if (authClaim instanceof String) {
+            authClaims = Arrays.asList(((String) authClaim).split(","));
+        } else if (authClaim instanceof Collection) {
+            @SuppressWarnings("unchecked")
+            Collection<String> tempClaims = (Collection<String>) authClaim;
+            authClaims = tempClaims;
+        } else {
+            authClaims = java.util.Collections.emptyList();
+        }
+
+        Collection<? extends GrantedAuthority> authorities =
+                authClaims.stream()
+                        .filter(auth -> auth != null && !auth.trim().isEmpty())
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+=======
+        Collection<? extends GrantedAuthority> authorities;
+        Object authClaim = claims.get("auth");
+        if (authClaim == null) {
+            authorities = java.util.Collections.emptyList();
+        } else {
+            authorities = Arrays.stream(authClaim.toString().split(","))
+                    .filter(auth -> !auth.trim().isEmpty())
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toList());
+        }
+>>>>>>> origin/main
+=======
+        Object authClaim = claims.get("auth");
+        Collection<String> authClaims;
+
+        if (authClaim instanceof String) {
+            authClaims = Arrays.asList(((String) authClaim).split(","));
+        } else if (authClaim instanceof Collection) {
+            @SuppressWarnings("unchecked")
+            Collection<String> tempClaims = (Collection<String>) authClaim;
+            authClaims = tempClaims;
+        } else {
+            authClaims = java.util.Collections.emptyList();
+        }
+
+        Collection<? extends GrantedAuthority> authorities =
+                authClaims.stream()
+                        .filter(auth -> auth != null && !auth.trim().isEmpty())
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+>>>>>>> REPLACE
