@@ -29,7 +29,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/h2-console/**").hasAuthority("ROLE_ADMIN") // Restrict H2 Console to Admin
-                .requestMatchers("/debug/**").permitAll()      // Allow debug endpoints for learning
+                .requestMatchers("/debug/**").hasAuthority("ROLE_ADMIN") // Restrict debug endpoints to admins
                 .requestMatchers("/auth/**").permitAll()       // Open auth endpoints
                 .anyRequest().authenticated()
             )
