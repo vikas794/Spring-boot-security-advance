@@ -13,10 +13,9 @@ import javax.crypto.SecretKey;
 import java.util.Collections;
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class JwtTokenProviderTest {
+class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
     private String secret;
@@ -28,6 +27,36 @@ public class JwtTokenProviderTest {
         long expiration = 3600000; // 1 hour
         jwtTokenProvider = new JwtTokenProvider(secret, expiration);
         key = Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    @Test
+    void testNullAuthClaim() {
+        JwtTokenProvider provider = new JwtTokenProvider("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!", 3600000);
+
+        String token = Jwts.builder()
+                .subject("user")
+                // no auth claim
+                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!".getBytes()))
+                .expiration(new Date(System.currentTimeMillis() + 3600000))
+                .compact();
+
+        Authentication auth = provider.getAuthentication(token);
+        assertTrue(auth.getAuthorities().isEmpty());
+    }
+
+    @Test
+    void testEmptyAuthClaim() {
+        JwtTokenProvider provider = new JwtTokenProvider("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!", 3600000);
+
+        String token = Jwts.builder()
+                .subject("user")
+                .claim("auth", "") // empty auth claim
+                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!".getBytes()))
+                .expiration(new Date(System.currentTimeMillis() + 3600000))
+                .compact();
+
+        Authentication auth = provider.getAuthentication(token);
+        assertTrue(auth.getAuthorities().isEmpty());
     }
 
     @Test
