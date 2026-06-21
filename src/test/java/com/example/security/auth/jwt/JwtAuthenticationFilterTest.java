@@ -56,8 +56,7 @@ class JwtAuthenticationFilterTest {
         String token = "valid.jwt.token";
         request.addHeader(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "Bearer " + token);
 
-        when(tokenProvider.validateToken(token)).thenReturn(true);
-        when(tokenProvider.getAuthentication(token)).thenReturn(authentication);
+        when(tokenProvider.validateAndGetAuthentication(token)).thenReturn(authentication);
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -70,12 +69,11 @@ class JwtAuthenticationFilterTest {
         String token = "invalid.jwt.token";
         request.addHeader(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "Bearer " + token);
 
-        when(tokenProvider.validateToken(token)).thenReturn(false);
+        when(tokenProvider.validateAndGetAuthentication(token)).thenReturn(null);
 
         filter.doFilterInternal(request, response, filterChain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        verify(tokenProvider, never()).getAuthentication(anyString());
         verify(filterChain).doFilter(request, response);
     }
 
@@ -84,7 +82,7 @@ class JwtAuthenticationFilterTest {
         filter.doFilterInternal(request, response, filterChain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        verify(tokenProvider, never()).validateToken(anyString());
+        verify(tokenProvider, never()).validateAndGetAuthentication(anyString());
         verify(filterChain).doFilter(request, response);
     }
 
@@ -96,7 +94,7 @@ class JwtAuthenticationFilterTest {
         filter.doFilterInternal(request, response, filterChain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        verify(tokenProvider, never()).validateToken(anyString());
+        verify(tokenProvider, never()).validateAndGetAuthentication(anyString());
         verify(filterChain).doFilter(request, response);
     }
 }
