@@ -1,0 +1,55 @@
+<<<<<<< SEARCH
+    @Test
+    void doFilterInternal_validJwtToken_setsAuthentication() throws ServletException, IOException {
+        String token = "valid.jwt.token";
+        request.addHeader(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "Bearer " + token);
+
+        when(tokenProvider.validateToken(token)).thenReturn(true);
+        when(tokenProvider.getAuthentication(token)).thenReturn(authentication);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isEqualTo(authentication);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_invalidJwtToken_doesNotSetAuthentication() throws ServletException, IOException {
+        String token = "invalid.jwt.token";
+        request.addHeader(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "Bearer " + token);
+
+        when(tokenProvider.validateToken(token)).thenReturn(false);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(tokenProvider, never()).getAuthentication(anyString());
+        verify(filterChain).doFilter(request, response);
+    }
+=======
+    @Test
+    void doFilterInternal_validJwtToken_setsAuthentication() throws ServletException, IOException {
+        String token = "valid.jwt.token";
+        request.addHeader(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "Bearer " + token);
+
+        when(tokenProvider.validateAndGetAuthentication(token)).thenReturn(authentication);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isEqualTo(authentication);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_invalidJwtToken_doesNotSetAuthentication() throws ServletException, IOException {
+        String token = "invalid.jwt.token";
+        request.addHeader(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "Bearer " + token);
+
+        when(tokenProvider.validateAndGetAuthentication(token)).thenReturn(null);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(filterChain).doFilter(request, response);
+    }
+>>>>>>> REPLACE
