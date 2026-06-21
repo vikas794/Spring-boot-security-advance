@@ -82,7 +82,7 @@ class JwtAuthenticationFilterTest {
         filter.doFilterInternal(request, response, filterChain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        verify(tokenProvider, never()).validateToken(anyString());
+        verify(tokenProvider, never()).validateAndGetAuthentication(anyString());
         verify(filterChain).doFilter(request, response);
     }
 
@@ -94,7 +94,7 @@ class JwtAuthenticationFilterTest {
         filter.doFilterInternal(request, response, filterChain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        verify(tokenProvider, never()).validateToken(anyString());
+        verify(tokenProvider, never()).validateAndGetAuthentication(anyString());
         verify(filterChain).doFilter(request, response);
     }
 }
