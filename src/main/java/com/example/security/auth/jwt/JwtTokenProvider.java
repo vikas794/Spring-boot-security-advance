@@ -37,11 +37,11 @@ public class JwtTokenProvider {
     }
 
     public String createToken(Authentication authentication) {
-        String authorities = authentication.getAuthorities().stream()
+        Collection<String> authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
+                .collect(Collectors.toList());
 
-        long now = (new Date()).getTime();
+        long now = System.currentTimeMillis();
         Date validity = new Date(now + this.tokenValidityInMilliseconds);
 
         return Jwts.builder()
@@ -59,16 +59,24 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        Collection<? extends GrantedAuthority> authorities;
         Object authClaim = claims.get("auth");
-        if (authClaim == null) {
-            authorities = java.util.Collections.emptyList();
+        Collection<String> authClaims;
+
+        if (authClaim instanceof String) {
+            authClaims = Arrays.asList(((String) authClaim).split(","));
+        } else if (authClaim instanceof Collection) {
+            @SuppressWarnings("unchecked")
+            Collection<String> tempClaims = (Collection<String>) authClaim;
+            authClaims = tempClaims;
         } else {
-            authorities = Arrays.stream(authClaim.toString().split(","))
-                    .filter(auth -> !auth.trim().isEmpty())
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
+            authClaims = java.util.Collections.emptyList();
         }
+
+        Collection<? extends GrantedAuthority> authorities =
+                authClaims.stream()
+                        .filter(auth -> auth != null && !auth.trim().isEmpty())
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
 
         org.springframework.security.core.userdetails.User principal =
                 new org.springframework.security.core.userdetails.User(claims.getSubject(), "", authorities);
