@@ -39,4 +39,48 @@ class JwtTokenProviderTest {
         Authentication auth = provider.getAuthentication(token);
         assertTrue(auth.getAuthorities().isEmpty());
     }
+
+    @Test
+    void testExpiredJwtException() {
+        JwtTokenProvider provider = new JwtTokenProvider("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!", 3600000);
+        String token = Jwts.builder()
+                .subject("user")
+                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!".getBytes()))
+                .expiration(new Date(System.currentTimeMillis() - 1000))
+                .compact();
+        assertNull(provider.validateAndGetAuthentication(token));
+    }
+
+    @Test
+    void testSignatureException() {
+        JwtTokenProvider provider = new JwtTokenProvider("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!", 3600000);
+        String token = Jwts.builder()
+                .subject("user")
+                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor("anotherSecretKeyThatIsAlsoAtLeast32BytesLong!!".getBytes()))
+                .expiration(new Date(System.currentTimeMillis() + 3600000))
+                .compact();
+        assertNull(provider.validateAndGetAuthentication(token));
+    }
+
+    @Test
+    void testMalformedJwtException() {
+        JwtTokenProvider provider = new JwtTokenProvider("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!", 3600000);
+        assertNull(provider.validateAndGetAuthentication("this.is.malformed"));
+    }
+
+    @Test
+    void testUnsupportedJwtException() {
+        JwtTokenProvider provider = new JwtTokenProvider("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!", 3600000);
+        String token = Jwts.builder()
+                .subject("user")
+                .compact(); // Unsecured JWT
+        assertNull(provider.validateAndGetAuthentication(token));
+    }
+
+    @Test
+    void testIllegalArgumentException() {
+        JwtTokenProvider provider = new JwtTokenProvider("mySecretKeyThatIsAtLeast32BytesLongForHmacSha256!!!!!", 3600000);
+        assertNull(provider.validateAndGetAuthentication(""));
+        assertNull(provider.validateAndGetAuthentication(null));
+    }
 }
